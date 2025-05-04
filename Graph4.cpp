@@ -60,12 +60,11 @@ public:
     void show();
     vector<T> BFS(Vertex<T> *v);
     vector<T> DFS(Vertex<T> *v);
-    unordered_map<Vertex<T>*, int> dijkstra(Vertex<T> *start);
-    unordered_map<Vertex<T>*, Vertex<T>*> shortestPath(Vertex<T> *start);
-    vector<T> getShortestPath(Vertex<T> *start, Vertex<T> *end);
+    vector<Vertex<T>*> shortestPath(Vertex<T> *start, Vertex<T> *end);
 private:
     void removeNode(Vertex<T> *v1, Vertex<T> *v2);
     void DFSUtil(Vertex<T>* v, unordered_set<Vertex<T>*>& visited, vector<T>& result);
+    unordered_map<Vertex<T>*, Vertex<T>*> dijkstra(Vertex<T> *start);
 };
 
 template <class T>
@@ -348,45 +347,7 @@ vector<T> Graph<T>::DFS(Vertex<T> *v) {
 }
 
 template <class T>
-unordered_map<Vertex<T>*, int> Graph<T>::dijkstra(Vertex<T>* start) {
-    if (!contains(start)) {
-        cout << "Starting vertex does not belong to the graph." << endl;
-        return {};
-    }
-
-    unordered_map<Vertex<T>*, int> dist;
-
-    // Khởi tạo khoảng cách tất cả đỉnh = ∞
-    for (Vertex<T>* v = head; v != nullptr; v = v->nextVertex) {
-        dist[v] = INT_MAX;
-    }
-    dist[start] = 0;
-
-    priority_queue<pair<int, Vertex<T>*>, vector<pair<int, Vertex<T>*>>, greater<>> pq;
-    pq.push({0, start});
-
-    while (!pq.empty()) {
-        auto [currentDist, u] = pq.top(); pq.pop();
-        if (currentDist > dist[u]) continue;
-
-        Node<T>* neighbor = u->adjNode;
-        while (neighbor) {
-            Vertex<T>* v = neighbor->vertex;
-            int weight = neighbor->weight;
-
-            if (dist[v] > dist[u] + weight) {
-                dist[v] = dist[u] + weight;
-                pq.push({dist[v], v});
-            }
-            neighbor = neighbor->next;
-        }
-    }
-
-    return dist;
-}
-
-template <class T>
-unordered_map<Vertex<T>*, Vertex<T>*> Graph<T>::shortestPath(Vertex<T> *start) {
+unordered_map<Vertex<T>*, Vertex<T>*> Graph<T>::dijkstra(Vertex<T>* start) {
     if (!contains(start)) {
         cout << "Starting vertex does not belong to the graph." << endl;
         return {};
@@ -394,6 +355,7 @@ unordered_map<Vertex<T>*, Vertex<T>*> Graph<T>::shortestPath(Vertex<T> *start) {
 
     unordered_map<Vertex<T>*, int> dist;
     unordered_map<Vertex<T>*, Vertex<T>*> previous;
+
 
     // Khởi tạo khoảng cách tất cả đỉnh = ∞
     for (Vertex<T>* v = head; v != nullptr; v = v->nextVertex) {
@@ -427,12 +389,19 @@ unordered_map<Vertex<T>*, Vertex<T>*> Graph<T>::shortestPath(Vertex<T> *start) {
 }
 
 template <class T>
-vector<T> Graph<T>::getShortestPath(Vertex<T> *start, Vertex<T> *end) {
-    unordered_map<Vertex<T>*, Vertex<T>*> prev = shortestPath(start);
-    vector<T> path;
-    for (Vertex<T>* at = end; at != nullptr; at = prev[at]) {
-        path.push_back(at->data);
+vector<Vertex<T>*> Graph<T>::shortestPath(Vertex<T> *start, Vertex<T> *end) {
+    unordered_map<Vertex<T>*, Vertex<T>*> prev = dijkstra(start);
+    vector<Vertex<T>*> path;
+
+    if (prev[end] == nullptr && end != start) {           // xử lý đỉnh lẻ
+        cout << "No path exists" << endl;
+        return {};
     }
+        
+    for (Vertex<T>* v = end; v != nullptr; v = prev[v]) {
+        path.push_back(v);
+    }
+
     reverse(path.begin(), path.end());
     return path;
 }
@@ -450,7 +419,7 @@ int main() {
 
     graph.addEdge(vertex_1, vertex_2, 10);
     graph.addEdge(vertex_1, vertex_3, 25);
-    graph.addEdge(vertex_4, vertex_3, 66);
+    graph.addEdge(vertex_4, vertex_3, 6);
     graph.addEdge(vertex_7, vertex_1, 38);
     graph.addEdge(vertex_5, vertex_4, 19);
     graph.addEdge(vertex_6, vertex_3, 45);
@@ -474,23 +443,11 @@ int main() {
     vector<int> dfs = graph.DFS(vertex_1);
     for (int i : dfs) cout << i << " ";
     cout << endl;
-    
-    cout << "---------------dijkstra---------------\n";
-    auto result = graph.dijkstra(vertex_1);
-
-    for (auto& pair : result) {
-        Vertex<int>* v = pair.first;
-        int distance = pair.second;
-        cout << "To " << v->data << ": ";
-        if (distance == INT_MAX) cout << "INF";
-        else cout << distance;
-        cout << endl;
-    }
 
     cout << "--------------shortestPath-------------\n";
     // Gọi hàm Dijkstra để lấy bản đồ đường đi ngắn nhất
-    for (int data : graph.getShortestPath(vertex_1, vertex_4)) {
-        cout << data << " - ";
+    for (Vertex<int> *v : graph.shortestPath(vertex_1, vertex_8)) {
+        cout << v->data << " - ";
     }
     cout << endl;
 
